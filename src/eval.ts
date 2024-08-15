@@ -1,11 +1,13 @@
 export type BinaryOp = '+' | '-' | '*' | '/' | '%';
 export type BinaryOpFunc = (lhs: number, rhs: number) => number;
 
-enum BinaryPrec {
-    PREC0 = 0,
-    PREC1,
-    COUNT_PRECS
-};
+const BinaryPrec = { // avoid dangerous enum in TS
+    PREC0: 0,
+    PREC1 : 1,
+    COUNT_PRECS : 2
+} as const;
+
+type BinaryPrec = typeof BinaryPrec[keyof typeof BinaryPrec];
 
 interface BinaryOpDef {
     func: BinaryOpFunc,
@@ -195,7 +197,7 @@ function parse_expr(lexer: Lexer, prec: BinaryPrec = BinaryPrec.PREC0): Expr {
         return parse_primary(lexer);
     }
 
-    let lhs = parse_expr(lexer, prec + 1);
+    let lhs = parse_expr(lexer, (prec + 1) as BinaryPrec);
 
     let op_token = lexer.next();
     if (op_token !== null) {
