@@ -5,14 +5,14 @@ enum BinaryPrec {
     PREC0 = 0,
     PREC1,
     COUNT_PRECS
-}
+};
 
 interface BinaryOpDef {
     func: BinaryOpFunc,
     prec: BinaryPrec
 }
 
-const BINARY_OPS: {[op in BinaryOp]: BinaryOpDef} = {
+const BINARY_OPS: Record<BinaryOp, BinaryOpDef> = {
     '+': {
         func: (lhs, rhs) => lhs + rhs,
         prec: BinaryPrec.PREC0
@@ -38,7 +38,7 @@ const BINARY_OPS: {[op in BinaryOp]: BinaryOpDef} = {
 type UnaryOp = '-';
 type UnaryOpFunc = (arg: number) => number;
 
-const UNARY_OPS: {[op in UnaryOp]: UnaryOpFunc} = {
+const UNARY_OPS: Record<UnaryOp, UnaryOpFunc> = {
     '-': (arg: number) => -arg,
 };
 
@@ -65,14 +65,14 @@ class Lexer {
             return c in BINARY_OPS || c in UNARY_OPS || syntax.includes(c);
         }
 
-        if (is_token_break(this.src[0])) {
-            const token = this.src[0];
+        if (is_token_break(this.src[0]!)) {
+            const token = this.src[0]!;
             this.src = this.src.slice(1);
             return token;
         }
 
         for (let i = 0; i < this.src.length; ++i) {
-            if (is_token_break(this.src[i]) || this.src[i] == ' ') {
+            if (is_token_break(this.src[i]!) || this.src[i] == ' ') {
                 const token = this.src.slice(0, i);
                 this.src = this.src.slice(i);
                 return token;
@@ -100,7 +100,7 @@ interface BinaryOpExpr {
 
 interface FuncallExpr {
     name: string,
-    args: Array<Expr>,
+    args: Expr[],
 }
 
 interface SymbolExpr {
@@ -136,15 +136,15 @@ function parse_primary(lexer: Lexer): Expr {
         } else {
             let next_token = lexer.next();
             if (next_token === '(') {
-                const args: Array<Expr> = [];
+                const args: Expr[] = [];
 
                 next_token = lexer.next();
                 if (next_token === ')') {
                     return {
-                        "kind": "funcall",
-                        "payload": {
-                            "name": token,
-                            "args": args,
+                        kind: "funcall",
+                        payload: {
+                            name: token,
+                            args: args,
                         }
                     };
                 }
@@ -167,10 +167,10 @@ function parse_primary(lexer: Lexer): Expr {
                 }
 
                 return {
-                    "kind": "funcall",
-                    "payload": {
-                        "name": token,
-                        "args": args,
+                    kind: "funcall",
+                    payload: {
+                        name: token,
+                        args: args,
                     }
                 };
             } else {
@@ -178,9 +178,9 @@ function parse_primary(lexer: Lexer): Expr {
                     lexer.unnext(next_token);
                 }
                 return {
-                    "kind": "symbol",
-                    "payload": {
-                        "value": token
+                    kind: "symbol",
+                    payload: {
+                        value: token
                     }
                 };
             }
@@ -202,11 +202,11 @@ function parse_expr(lexer: Lexer, prec: BinaryPrec = BinaryPrec.PREC0): Expr {
         if (op_token in BINARY_OPS && BINARY_OPS[op_token as BinaryOp].prec == prec) {
             let rhs = parse_expr(lexer, prec);
             return {
-                "kind": "binary_op",
-                "payload": {
-                    "op": op_token as BinaryOp,
-                    "lhs": lhs,
-                    "rhs": rhs,
+                kind: "binary_op",
+                payload: {
+                    op: op_token as BinaryOp,
+                    lhs,
+                    rhs,
                 }
             };
         } else {
@@ -230,8 +230,8 @@ function compile_expr(src: string): Expr {
 }
 
 interface UserContext {
-    vars?: {[name: string]: number},
-    funcs?: {[name: string]: (...xs: number[]) => number},
+    vars?: Record<string, number>,
+    funcs?: Record<string, (...xs: number[]) => number>,
 }
 
 function run_expr(expr: Expr, user_context: UserContext = {}): number {
@@ -244,7 +244,7 @@ function run_expr(expr: Expr, user_context: UserContext = {}): number {
         const number = Number(value);
         if (isNaN(number)) {
             if (user_context.vars && value in user_context.vars) {
-                return user_context.vars[value];
+                return user_context.vars[value]!;
             }
 
             throw new Error(`Unknown variable '${value}'`);
@@ -279,7 +279,7 @@ function run_expr(expr: Expr, user_context: UserContext = {}): number {
         const funcall = expr.payload as FuncallExpr;
 
         if (user_context.funcs && funcall.name in user_context.funcs) {
-            return user_context.funcs[funcall.name](...funcall.args.map((arg) => run_expr(arg, user_context)));
+            return user_context.funcs[funcall.name]!(...funcall.args.map((arg) => run_expr(arg, user_context)));
         }
 
         throw new Error(`Unknown function '${funcall.name}'`);

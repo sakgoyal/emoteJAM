@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 
 function cmd(program, args) {
     console.log('CMD:', program, args);
-    const p = spawn(program, args.flat()); // NOTE: flattening the args array enables you to group related arguments for better self-documentation of the running command
+    const p = spawn(program, args.flat(), {shell: process.platform == 'win32'}); // NOTE: flattening the args array enables you to group related arguments for better self-documentation of the running command
     p.stdout.on('data', (data) => process.stdout.write(data));
     p.stderr.on('data', (data) => process.stderr.write(data));
     p.on('close', (code) => {

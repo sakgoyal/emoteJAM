@@ -25,7 +25,7 @@ function compileShaderSource(gl, source, shaderType) {
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        throw new Error("Could not compile " + shaderTypeToString() + " shader: " + gl.getShaderInfoLog(shader));
+        throw new Error("Could not compile ".concat(shaderTypeToString(), " shader: ").concat(gl.getShaderInfoLog(shader)));
     }
     return shader;
 }
@@ -38,12 +38,13 @@ function linkShaderProgram(gl, shaders, vertexAttribs) {
         var shader = shaders_1[_i];
         gl.attachShader(program, shader);
     }
-    for (var vertexName in vertexAttribs) {
-        gl.bindAttribLocation(program, vertexAttribs[vertexName], vertexName);
+    for (var _a = 0, _b = Object.entries(vertexAttribs); _a < _b.length; _a++) {
+        var _c = _b[_a], vertexName = _c[0], vertexVal = _c[1];
+        gl.bindAttribLocation(program, vertexVal, vertexName);
     }
     gl.linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        throw new Error("Could not link shader program: " + gl.getProgramInfoLog(program));
+        throw new Error("Could not link shader program: ".concat(gl.getProgramInfoLog(program)));
     }
     return program;
 }
@@ -69,74 +70,77 @@ function loadFilterProgram(gl, filter, vertexAttribs) {
     gl.deleteShader(fragmentShader);
     gl.useProgram(id);
     var uniforms = {
-        "resolution": gl.getUniformLocation(id, 'resolution'),
-        "time": gl.getUniformLocation(id, 'time'),
-        "emoteSize": gl.getUniformLocation(id, 'emoteSize')
+        resolution: gl.getUniformLocation(id, 'resolution'),
+        time: gl.getUniformLocation(id, 'time'),
+        emoteSize: gl.getUniformLocation(id, 'emoteSize'),
     };
     var paramsPanel = div().att$("class", "widget-element");
     var paramsInputs = {};
-    var _loop_1 = function (paramName) {
+    if (!filter.params)
+        throw new Error("unknown error");
+    var _loop_1 = function (paramName, paramVal) {
         if (paramName in uniforms) {
-            throw new Error("Redefinition of existing uniform parameter " + paramName);
+            throw new Error("Redefinition of existing uniform parameter ".concat(paramName));
         }
-        switch (filter.params[paramName].type) {
+        switch (paramVal.type) {
             case "float":
                 {
-                    var valuePreview_1 = span(filter.params[paramName].init.toString());
+                    var valuePreview_1 = span(paramVal.init.toString());
                     var valueInput = input("range");
-                    if (filter.params[paramName].min !== undefined) {
-                        valueInput.att$("min", filter.params[paramName].min);
+                    if (paramVal.min !== undefined) {
+                        valueInput.att$("min", String(paramVal.min));
                     }
-                    if (filter.params[paramName].max !== undefined) {
-                        valueInput.att$("max", filter.params[paramName].max);
+                    if (paramVal.max !== undefined) {
+                        valueInput.att$("max", String(paramVal.max));
                     }
-                    if (filter.params[paramName].step !== undefined) {
-                        valueInput.att$("step", filter.params[paramName].step);
+                    if (paramVal.step !== undefined) {
+                        valueInput.att$("step", String(paramVal.step));
                     }
-                    if (filter.params[paramName].init !== undefined) {
-                        valueInput.att$("value", filter.params[paramName].init);
+                    if (paramVal.init !== undefined) {
+                        valueInput.att$("value", String(paramVal.init));
                     }
                     paramsInputs[paramName] = valueInput;
                     valueInput.oninput = function () {
                         valuePreview_1.innerText = this.value;
                         paramsPanel.dispatchEvent(new CustomEvent("paramsChanged"));
                     };
-                    var label = (_a = filter.params[paramName].label) !== null && _a !== void 0 ? _a : paramName;
-                    paramsPanel.appendChild(div(span(label + ": "), valuePreview_1, div(valueInput)));
+                    var label = (_a = paramVal.label) !== null && _a !== void 0 ? _a : paramName;
+                    paramsPanel.appendChild(div(span("".concat(label, ": ")), valuePreview_1, div(valueInput)));
                 }
                 break;
             default: {
-                throw new Error("Filter parameters do not support type " + filter.params[paramName].type);
+                throw new Error("Filter parameters do not support type ".concat(paramVal.type));
             }
         }
         uniforms[paramName] = gl.getUniformLocation(id, paramName);
     };
-    for (var paramName in filter.params) {
-        _loop_1(paramName);
+    for (var _i = 0, _b = Object.entries(filter.params); _i < _b.length; _i++) {
+        var _c = _b[_i], paramName = _c[0], paramVal = _c[1];
+        _loop_1(paramName, paramVal);
     }
     paramsPanel.paramsSnapshot$ = function () {
         var snapshot = {};
         for (var paramName in paramsInputs) {
             snapshot[paramName] = {
-                "uniform": uniforms[paramName],
-                "value": Number(paramsInputs[paramName].value)
+                uniform: uniforms[paramName],
+                value: Number(paramsInputs[paramName].value)
             };
         }
         return snapshot;
     };
     return {
-        "id": id,
-        "uniforms": uniforms,
-        "duration": compile_expr(filter.duration),
-        "transparent": filter.transparent,
-        "paramsPanel": paramsPanel
+        id: id,
+        uniforms: uniforms,
+        duration: compile_expr(filter.duration),
+        transparent: filter.transparent,
+        paramsPanel: paramsPanel,
     };
 }
 function ImageSelector() {
     var imageInput = input("file");
     var imagePreview = img("img/tsodinClown.png")
         .att$("class", "widget-element")
-        .att$("width", CANVAS_WIDTH);
+        .att$("width", String(CANVAS_WIDTH));
     var root = div(div(imageInput).att$("class", "widget-element"), imagePreview).att$("class", "widget");
     root.selectedImage$ = function () {
         return imagePreview;
@@ -154,8 +158,9 @@ function ImageSelector() {
         return file ? removeFileNameExt(file.name) : 'result';
     };
     root.updateFiles$ = function (files) {
+        var _a;
         imageInput.files = files;
-        imageInput.onchange();
+        (_a = imageInput.onchange) === null || _a === void 0 ? void 0 : _a.call(imageInput);
     };
     imagePreview.addEventListener('load', function () {
         root.dispatchEvent(new CustomEvent("imageSelected", {
@@ -189,6 +194,7 @@ function FilterList() {
         }));
     };
     root.addEventListener('wheel', function (e) {
+        var _a;
         e.preventDefault();
         if (e.deltaY < 0) {
             root.selectedIndex = Math.max(root.selectedIndex - 1, 0);
@@ -196,42 +202,40 @@ function FilterList() {
         if (e.deltaY > 0) {
             root.selectedIndex = Math.min(root.selectedIndex + 1, root.length - 1);
         }
-        root.onchange();
+        (_a = root.onchange) === null || _a === void 0 ? void 0 : _a.call(root);
     });
     return root;
 }
 function FilterSelector() {
     var filterList_ = FilterList();
     var filterPreview = canvas()
-        .att$("width", CANVAS_WIDTH)
-        .att$("height", CANVAS_HEIGHT);
+        .att$("width", String(CANVAS_WIDTH))
+        .att$("height", String(CANVAS_HEIGHT));
     var root = div(div("Filter: ", filterList_)
         .att$("class", "widget-element"), filterPreview.att$("class", "widget-element")).att$("class", "widget");
     var gl = filterPreview.getContext("webgl", { antialias: false, alpha: false });
     if (!gl) {
         throw new Error("Could not initialize WebGL context");
     }
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     {
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        {
-            var meshPositionBufferData = new Float32Array(TRIANGLE_PAIR * TRIANGLE_VERTICIES * VEC2_COUNT);
-            for (var triangle = 0; triangle < TRIANGLE_PAIR; ++triangle) {
-                for (var vertex = 0; vertex < TRIANGLE_VERTICIES; ++vertex) {
-                    var quad = triangle + vertex;
-                    var index = triangle * TRIANGLE_VERTICIES * VEC2_COUNT +
-                        vertex * VEC2_COUNT;
-                    meshPositionBufferData[index + VEC2_X] = (2 * (quad & 1) - 1);
-                    meshPositionBufferData[index + VEC2_Y] = (2 * ((quad >> 1) & 1) - 1);
-                }
+        var meshPositionBufferData = new Float32Array(TRIANGLE_PAIR * TRIANGLE_VERTICIES * VEC2_COUNT);
+        for (var triangle = 0; triangle < TRIANGLE_PAIR; ++triangle) {
+            for (var vertex = 0; vertex < TRIANGLE_VERTICIES; ++vertex) {
+                var quad = triangle + vertex;
+                var index = triangle * TRIANGLE_VERTICIES * VEC2_COUNT +
+                    vertex * VEC2_COUNT;
+                meshPositionBufferData[index + VEC2_X] = (2 * (quad & 1) - 1);
+                meshPositionBufferData[index + VEC2_Y] = (2 * ((quad >> 1) & 1) - 1);
             }
-            var meshPositionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, meshPositionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, meshPositionBufferData, gl.STATIC_DRAW);
-            var meshPositionAttrib = vertexAttribs['meshPosition'];
-            gl.vertexAttribPointer(meshPositionAttrib, VEC2_COUNT, gl.FLOAT, false, 0, 0);
-            gl.enableVertexAttribArray(meshPositionAttrib);
         }
+        var meshPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, meshPositionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, meshPositionBufferData, gl.STATIC_DRAW);
+        var meshPositionAttrib = vertexAttribs['meshPosition'];
+        gl.vertexAttribPointer(meshPositionAttrib, VEC2_COUNT, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(meshPositionAttrib);
     }
     var emoteImage = undefined;
     var emoteTexture = undefined;
@@ -286,10 +290,10 @@ function FilterSelector() {
             quality: 10,
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
-            transparent: program.transparent
+            transparent: program.transparent,
         });
         var context = {
-            "vars": {
+            vars: {
                 "Math.PI": Math.PI
             }
         };
@@ -346,9 +350,9 @@ function FilterSelector() {
             }
             gif.addFrame(new ImageData(pixels, CANVAS_WIDTH, CANVAS_HEIGHT), {
                 delay: dt * 1000,
-                dispose: 2
+                dispose: 2,
             });
-            renderProgress.style.width = (t / duration) * 50 + "%";
+            renderProgress.style.width = "".concat((t / duration) * 50, "%");
             t += dt;
         }
         gif.on('finished', function (blob) {
@@ -360,7 +364,7 @@ function FilterSelector() {
             renderSpinner.style.display = "none";
         });
         gif.on('progress', function (p) {
-            renderProgress.style.width = 50 + p * 50 + "%";
+            renderProgress.style.width = "".concat(50 + p * 50, "%");
         });
         gif.render();
         return gif;
@@ -422,10 +426,10 @@ window.onload = function () {
         throw new Error('Could not find "render"');
     }
     renderButton.onclick = function () {
-        if (gif && gif.running) {
+        if (gif === null || gif === void 0 ? void 0 : gif.running) {
             gif.abort();
         }
         var fileName = imageSelector.selectedFileName$();
-        gif = filterSelector.render$(fileName + ".gif");
+        gif = filterSelector.render$("".concat(fileName, ".gif"));
     };
 };

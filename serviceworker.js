@@ -14,7 +14,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -71,27 +71,30 @@ self.addEventListener("activate", function (e) {
     console.log("[Service Worker] Activate");
     var event = e;
     event.waitUntil((function () { return __awaiter(void 0, void 0, void 0, function () {
-        var keys, _a, _b, _i, key;
-        return __generator(this, function (_c) {
-            switch (_c.label) {
+        var keys, _a, _b, _c, _i, key;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
                 case 0:
                     console.log("[Service Worker] Cleaning up all caches");
                     return [4, caches.keys()];
                 case 1:
-                    keys = _c.sent();
-                    _a = [];
-                    for (_b in keys)
-                        _a.push(_b);
+                    keys = _d.sent();
+                    _a = keys;
+                    _b = [];
+                    for (_c in _a)
+                        _b.push(_c);
                     _i = 0;
-                    _c.label = 2;
+                    _d.label = 2;
                 case 2:
-                    if (!(_i < _a.length)) return [3, 5];
-                    key = _a[_i];
+                    if (!(_i < _b.length)) return [3, 5];
+                    _c = _b[_i];
+                    if (!(_c in _a)) return [3, 4];
+                    key = _c;
                     if (!(key !== cacheName)) return [3, 4];
-                    return [4, caches["delete"](key)];
+                    return [4, caches.delete(key)];
                 case 3:
-                    _c.sent();
-                    _c.label = 4;
+                    _d.sent();
+                    _d.label = 4;
                 case 4:
                     _i++;
                     return [3, 2];
@@ -107,7 +110,7 @@ self.addEventListener("fetch", function (e) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    console.log("[Service Worker] Fetch " + event.request.url);
+                    console.log("[Service Worker] Fetch ".concat(event.request.url));
                     return [4, caches.open(cacheName)];
                 case 1:
                     cache = _a.sent();
@@ -115,7 +118,7 @@ self.addEventListener("fetch", function (e) {
                 case 2:
                     response = _a.sent();
                     if (!(response === undefined)) return [3, 4];
-                    console.log("[Service Worker] Response for " + event.request.url + " is not available in cache. Making an actual request...");
+                    console.log("[Service Worker] Response for ".concat(event.request.url, " is not available in cache. Making an actual request..."));
                     return [4, fetch(event.request.url)];
                 case 3:
                     response = _a.sent();

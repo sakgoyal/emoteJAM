@@ -1,4 +1,4 @@
-interface Param {
+type Param = {
     label?: string,
     type: string,
     init: number,
@@ -7,69 +7,69 @@ interface Param {
     step?: number,
 }
 
-interface Filter {
+type Filter = {
     transparent: string | null,
     duration: string,
-    params?: {
-        [name: string]: Param
-    },
+    params?: Record<string, Param>,
     vertex: string,
     fragment: string
 }
 
+type FilterType = "Hop" | "Hopper" | "Overheat" | "Bounce" | "Circle" | "Slide" | "Laughing" | "Blob" | "Go" | "Elevator" | "Rain" | "Pride" | "Hard" | "Peek" | "Matrix" | "Flag" | "Thanosed" | "Ripple";
+
 // TODO(#58): add params to all of the filters
 // TODO(#61): human readable titles for the filter params
-const filters: {[name: string]: Filter} = {
-    "Hop": {
-        "transparent": 0x00FF00 + "",
-        "duration": "interval * 2",
+const filters: Record<FilterType, Filter> = {
+    Hop: {
+        transparent: String(0x00FF00),
+        duration: "interval * 2",
         // TODO(#62): when you have too many params the UI gets really cluttered
-        "params": {
+        params: {
             // TODO(#65): filter params should have help tooltips associated with them
-            "interval": {
-                "label": "Interval",
-                "type": "float",
-                "init": 0.85,
-                "min": 0.01,
-                "max": 2.00,
-                "step": 0.01,
+            interval: {
+                label: "Interval",
+                type: "float",
+                init: 0.85,
+                min: 0.01,
+                max: 2.00,
+                step: 0.01,
             },
-            "ground": {
-                "label": "Ground",
-                "type": "float",
-                "init": 0.5,
-                "min": -1.0,
-                "max": 1.0,
-                "step": 0.01,
+            ground: {
+                label: "Ground",
+                type: "float",
+                init: 0.5,
+                min: -1.0,
+                max: 1.0,
+                step: 0.01,
             },
-            "scale": {
-                "label": "Scale",
-                "type": "float",
-                "init": 0.40,
-                "min": 0.0,
-                "max": 1.0,
-                "step": 0.01,
+            scale: {
+                label: "Scale",
+                type: "float",
+                init: 0.40,
+                min: 0.0,
+                max: 1.0,
+                step: 0.01,
             },
             // TODO(#63): jump_height in the "Hop" filter does not make any sense
             // If it's bigger the emote should jump higher. Right now it is the other way around.
-            "jump_height": {
-                "label": "Jump Height",
-                "type": "float",
-                "init": 4.0,
-                "min": 1.0,
-                "max": 10.0,
-                "step": 0.01,
+            jump_height: {
+                label: "Jump Height",
+                type: "float",
+                init: 4.0,
+                min: 1.0,
+                max: 10.0,
+                step: 0.01,
             },
-            "hops": {
-                "label": "Hops Count",
-                "type": "float",
-                "init": 2.0,
-                "min": 1.0,
-                "max": 5.0,
-                "step": 1.0,
+            hops: {
+                label: "Hops Count",
+                type: "float",
+                init: 2.0,
+                min: 1.0,
+                max: 5.0,
+                step: 1.0,
             }
         },
-        "vertex": `#version 100
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -109,7 +109,7 @@ void main() {
     uv.x = (flipping_directions(x_time_interval) + 1.0) / 2.0 - uv.x * flipping_directions(x_time_interval);
 }
 `,
-        "fragment": `#version 100
+        fragment: `#version 100
 
 precision mediump float;
 
@@ -126,10 +126,10 @@ void main() {
 }
 `
     },
-    "Hopper": {
-        "transparent": 0x00FF00 + "",
-        "duration": "0.85",
-        "vertex": `#version 100
+    Hopper: {
+        transparent: String(0x00FF00),
+        duration: "0.85",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -165,7 +165,7 @@ void main() {
     uv.x = (flipping_directions(x_time_interval) + 1.0) / 2.0 - uv.x * flipping_directions(x_time_interval);
 }
 `,
-        "fragment": `#version 100
+        fragment: `#version 100
 
 precision mediump float;
 
@@ -182,10 +182,10 @@ void main() {
 }
 `
     },
-    "Overheat": {
-        "transparent": 0x00FF00 + "",
-        "duration": "0.85 / 8.0 * 2.0",
-        "vertex": `#version 100
+    Overheat: {
+        transparent: String(0x00FF00),
+        duration: "0.85 / 8.0 * 2.0",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -221,7 +221,7 @@ void main() {
     uv.x = (flipping_directions(x_time_interval) + 1.0) / 2.0 - uv.x * flipping_directions(x_time_interval);
 }
 `,
-        "fragment": `#version 100
+        fragment: `#version 100
 
 precision mediump float;
 
@@ -238,26 +238,26 @@ void main() {
 }
 `
     },
-    "Bounce": {
-        "transparent": 0x00FF00 + "",
-        "duration": "Math.PI / period",
-        "params": {
-            "period": {
-                "type": "float",
-                "init": 5.0,
-                "min": 1.0,
-                "max": 10.0,
-                "step": 0.1,
+    Bounce: {
+        transparent: String(0x00FF00),
+        duration: "Math.PI / period",
+        params: {
+            period: {
+                type: "float",
+                init: 5.0,
+                min: 1.0,
+                max: 10.0,
+                step: 0.1,
             },
-            "scale": {
-                "type": "float",
-                "init": 0.30,
-                "min": 0.0,
-                "max": 1.0,
-                "step": 0.01,
+            scale: {
+                type: "float",
+                init: 0.30,
+                min: 0.0,
+                max: 1.0,
+                step: 0.01,
             }
         },
-        "vertex": `#version 100
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -276,7 +276,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -294,10 +294,10 @@ void main() {
 }
 `,
     },
-    "Circle": {
-        "transparent": 0x00FF00 + "",
-        "duration": "Math.PI / 4.0",
-        "vertex": `#version 100
+    Circle: {
+        transparent: String(0x00FF00),
+        duration: "Math.PI / 4.0",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -327,7 +327,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -346,10 +346,10 @@ void main() {
 }
 `,
     },
-    "Slide": {
-        "transparent": 0x00FF00 + "",
-        "duration": "0.85 * 2",
-        "vertex": `#version 100
+    Slide: {
+        transparent: String(0x00FF00),
+        duration: "0.85 * 2",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -385,7 +385,7 @@ void main() {
     uv.x = (flipping_directions(x_time_interval) + 1.0) / 2.0 - uv.x * flipping_directions(x_time_interval);
 }
 `,
-        "fragment": `#version 100
+        fragment: `#version 100
 
 precision mediump float;
 
@@ -402,10 +402,10 @@ void main() {
 }
 `
     },
-    "Laughing": {
-        "transparent": 0x00FF00 + "",
-        "duration": "Math.PI / 12.0",
-        "vertex": `#version 100
+    Laughing: {
+        transparent: String(0x00FF00),
+        duration: "Math.PI / 12.0",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -424,7 +424,7 @@ void main() {
     uv = (meshPosition + vec2(1.0, 1.0)) / 2.0;
 }
 `,
-        "fragment": `#version 100
+        fragment: `#version 100
 
 precision mediump float;
 
@@ -441,10 +441,10 @@ void main() {
 }
 `
     },
-    "Blob": {
-        "transparent": 0x00FF00 + "",
-        "duration": "Math.PI / 3",
-        "vertex": `#version 100
+    Blob: {
+        transparent: String(0x00FF00),
+        duration: "Math.PI / 3",
+        vertex: `#version 100
 
 precision mediump float;
 
@@ -466,7 +466,7 @@ void main() {
     uv = (meshPosition + vec2(1.0, 1.0)) / 2.0;
 }
 `,
-        "fragment": `#version 100
+        fragment: `#version 100
 
 precision mediump float;
 
@@ -483,10 +483,10 @@ void main() {
 }
 `
     },
-    "Go": {
-        "transparent": 0x00FF00 + "",
-        "duration": "1 / 4",
-        "vertex": `#version 100
+    Go: {
+        transparent: String(0x00FF00),
+        duration: "1 / 4",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -501,7 +501,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -524,10 +524,10 @@ void main() {
 }
 `,
     },
-    "Elevator": {
-        "transparent": 0x00FF00 + "",
-        "duration": "1 / 4",
-        "vertex": `#version 100
+    Elevator: {
+        transparent: String(0x00FF00),
+        duration: "1 / 4",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -542,7 +542,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -567,10 +567,10 @@ void main() {
 }
 `,
     },
-    "Rain": {
-        "transparent": 0x00FF00 + "",
-        "duration": "1",
-        "vertex": `#version 100
+    Rain: {
+        transparent: String(0x00FF00),
+        duration: "1",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -585,7 +585,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -611,10 +611,10 @@ void main() {
 }
 `,
     },
-    "Pride": {
-        "transparent": null,
-        "duration": "2.0",
-        "vertex": `#version 100
+    Pride: {
+        transparent: null,
+        duration: "2.0",
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -629,7 +629,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -657,33 +657,33 @@ void main() {
 }
 `,
     },
-    "Hard": {
-        "transparent": 0x00FF00 + "",
-        "duration": "2.0 * Math.PI / intensity",
-        "params": {
-            "zoom": {
-                "type": "float",
-                "init": 1.4,
-                "min": 0.0,
-                "max": 6.9,
-                "step": 0.1,
+    Hard: {
+        transparent: String(0x00FF00),
+        duration: "2.0 * Math.PI / intensity",
+        params: {
+            zoom: {
+                type: "float",
+                init: 1.4,
+                min: 0.0,
+                max: 6.9,
+                step: 0.1,
             },
-            "intensity": {
-                "type": "float",
-                "init": 32.0,
-                "min": 1.0,
-                "max": 42.0,
-                "step": 1.0,
+            intensity: {
+                type: "float",
+                init: 32.0,
+                min: 1.0,
+                max: 42.0,
+                step: 1.0,
             },
-            "amplitude": {
-                "type": "float",
-                "init": 1.0 / 8.0,
-                "min": 0.0,
-                "max": 1.0 / 2.0,
-                "step": 0.001,
+            amplitude: {
+                type: "float",
+                init: 1.0 / 8.0,
+                min: 0.0,
+                max: 1.0 / 2.0,
+                step: 0.001,
             },
         },
-        "vertex": `#version 100
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -703,7 +703,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -721,10 +721,10 @@ void main() {
 }
 `,
     },
-	"Peek":{
-        "transparent": 0x00FF00 + "",
-        "duration": "2.0 * Math.PI" ,
-        "vertex": `#version 100
+	Peek:{
+        transparent: String(0x00FF00),
+        duration: "2.0 * Math.PI" ,
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -744,13 +744,13 @@ void main() {
     float hold2 = 1.0 - float(time_clipped > (2.5 * 3.14) && time_clipped < (4.0 * 3.14));
 
     float cycle_1 = 1.0 - ((s1 * sin(time_clipped) * (1.0 - hold1)) + hold1);
-    float cycle_2 = s2 * hold2 * (sin(time_clipped) - 1.0); 
+    float cycle_2 = s2 * hold2 * (sin(time_clipped) - 1.0);
 
     gl_Position = vec4(meshPosition.x + 1.0 + cycle_1 + cycle_2 , meshPosition.y, 0.0, 1.0);
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -766,12 +766,12 @@ void main() {
     gl_FragColor = texture2D(emote, vec2(uv.x, 1.0 - uv.y));
     gl_FragColor.w = floor(gl_FragColor.w + 0.5);
 }
-`, 
+`,
 	},
-    "Matrix": {
-        "transparent": null,
-        "duration": "3.0",
-        "vertex":`
+    Matrix: {
+        transparent: null,
+        duration: "3.0",
+        vertex:`
         #version 100
         precision mediump float;
 
@@ -788,7 +788,7 @@ void main() {
             gl_Position = vec4(meshPosition.x, meshPosition.y, 0.0, 1.0);
         }
         `,
-        "fragment": `
+        fragment: `
         #version 100
         precision mediump float;
 
@@ -823,7 +823,7 @@ void main() {
         {
             float random = 2920.0 * sin(n.x * 21942.0 + n.y * 171324.0 + 8912.0) *
              cos(n.x * 23157.0 * n.y * 217832.0 + 9758.0);
-        
+
             return (sin(random) + 1.0) / 2.0;
         }
 
@@ -837,15 +837,15 @@ void main() {
         {
             vec2 uv = _uv;
             uv.y = 1.0 - _uv.y;
-            
+
             float number_of_numbers = 8.0;
             float number_change_rate = 2.0;
             float amount_of_numbers = 0.6; // from 0 - 1
-            
+
             vec4 texture_color = texture2D(emote, uv);
             vec4 number_color = vec4(0, 0.7, 0, 1);
 
-            float looped_time = loop_time(3.0); 
+            float looped_time = loop_time(3.0);
 
             vec2 translation = vec2(0, looped_time * -8.0);
 
@@ -870,10 +870,10 @@ void main() {
         }
         `
     },
-    "Flag":{
-        "transparent": 0x00FF00 + "",
-        "duration": "Math.PI",
-        "vertex":`
+    Flag: {
+        transparent: String(0x00FF00),
+        duration: "Math.PI",
+        vertex:`
         #version 100
         precision mediump float;
 
@@ -891,7 +891,7 @@ void main() {
             gl_Position = vec4(meshPosition.x, meshPosition.y, 0.0, 1.0);
         }
         `,
-        "fragment" :`
+        fragment :`
         #version 100
         precision mediump float;
 
@@ -911,7 +911,7 @@ void main() {
             float right = pos.x + size.x;
             float bottom = pos.y;
             float top = pos.y + size.y;
-            return (step(bottom, uv.y) - step(top, uv.y)) * (step(left, uv.x) - step(right, uv.x)); 
+            return (step(bottom, uv.y) - step(top, uv.y)) * (step(left, uv.x) - step(right, uv.x));
         }
 
         void main() {
@@ -919,7 +919,7 @@ void main() {
             float flag_height = 0.75;
             float wave_size = 0.08;
             vec4 stick_color = vec4(107.0 / 256.0, 59.0 / 256.0, 9.0 / 256.0,1);
-            
+
             vec2 flag_uv = _uv;
             flag_uv.x = (1.0 / (1.0 - stick_width)) * (flag_uv.x - stick_width);
             flag_uv.y *= 1.0 / flag_height;
@@ -937,33 +937,33 @@ void main() {
         }
         `
     },
-    "Thanosed": {
-        "transparent": 0x00FF00 + "",
-        "duration": "duration",
-        "params": {
-            "duration": {
-                "type": "float",
-                "init": 6.0,
-                "min": 1.0,
-                "max": 16.0,
-                "step": 1.0,
+    Thanosed: {
+        transparent: String(0x00FF00),
+        duration: "duration",
+        params: {
+            duration: {
+                type: "float",
+                init: 6.0,
+                min: 1.0,
+                max: 16.0,
+                step: 1.0,
             },
-            "delay": {
-                "type": "float",
-                "init": 0.2,
-                "min": 0.0,
-                "max": 1.0,
-                "step": 0.1,
+            delay: {
+                type: "float",
+                init: 0.2,
+                min: 0.0,
+                max: 1.0,
+                step: 0.1,
             },
-            "pixelization": {
-                "type": "float",
-                "init": 1.0,
-                "min": 1.0,
-                "max": 3.0,
-                "step": 1.0,
+            pixelization: {
+                type: "float",
+                init: 1.0,
+                min: 1.0,
+                max: 3.0,
+                step: 1.0,
             },
         },
-        "vertex": `#version 100
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -978,7 +978,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `
+        fragment: `
 #version 100
 
 precision mediump float;
@@ -1016,36 +1016,36 @@ void main() {
 }
 `,
     },
-    "Ripple": {
-        "transparent": 0x00FF00 + "",
-        "duration": "2 * Math.PI / b",
-        "params": {
-            "a": {
-                "label": "Wave Length",
-                "type": "float",
-                "init": 12.0,
-                "min": 0.01,
-                "max": 24.0,
-                "step": 0.01,
+    Ripple: {
+        transparent: String(0x00FF00),
+        duration: "2 * Math.PI / b",
+        params: {
+            a: {
+                label: "Wave Length",
+                type: "float",
+                init: 12.0,
+                min: 0.01,
+                max: 24.0,
+                step: 0.01,
             },
-            "b": {
-                "label": "Time Freq",
-                "type": "float",
-                "init": 4.0,
-                "min": 0.01,
-                "max": 8.0,
-                "step": 0.01,
+            b: {
+                label: "Time Freq",
+                type: "float",
+                init: 4.0,
+                min: 0.01,
+                max: 8.0,
+                step: 0.01,
             },
-            "c": {
-                "label": "Amplitude",
-                "type": "float",
-                "init": 0.03,
-                "min": 0.01,
-                "max": 0.06,
-                "step": 0.01,
+            c: {
+                label: "Amplitude",
+                type: "float",
+                init: 0.03,
+                min: 0.01,
+                max: 0.06,
+                step: 0.01,
             }
         },
-        "vertex": `#version 100
+        vertex: `#version 100
 precision mediump float;
 
 attribute vec2 meshPosition;
@@ -1060,7 +1060,7 @@ void main() {
     uv = (meshPosition + 1.0) / 2.0;
 }
 `,
-        "fragment": `#version 100
+        fragment: `#version 100
 
 precision mediump float;
 

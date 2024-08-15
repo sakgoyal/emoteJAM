@@ -1,27 +1,44 @@
-const LOREM: string = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-
 type Child = string | HTMLElement;
-// TODO(#73): make tag more typesafe
-// Essentially get rid of the `any`
-type Tag = any;
 
-function tag(name: string, ...children: Child[]): Tag {
-    const result: Tag = document.createElement(name);
+/**
+ * Used to patch typescript conflict between class and className.
+ * Typscript merges interfaces so this works without modifying the library version of the interface.
+ * See the Notes section here.
+ * https://developer.mozilla.org/en-US/docs/Web/API/Element/className#notes
+ */
+interface HTMLElement { class : string }
+
+type Tag<T extends HTMLElement = HTMLElement> = T & {
+    att$ : (name: string, value: string) => Tag<T>;
+    onclick$ : (callback: (this: GlobalEventHandlers, ev: MouseEvent) => Tag<T>) => Tag<T>;
+    paramsSnapshot$ : () => Snapshot;
+    selectedImage$ : () => Tag<HTMLImageElement>;
+    selectedFileName$ : () => string;
+    updateFiles$ : (files: FileList) => void;
+    selectedFilter$ : () => Filter;
+    render$ : (filename: string) => GIF | undefined;
+    updateImage$ : Function; // TODO: change this to the actual function type
+
+    files : FileList;
+};
+
+function tag<T extends HTMLElement = HTMLElement>(name: string, ...children: Child[]): Tag<T> {
+    const result = document.createElement(name) as Tag<T>;
     for (const child of children) {
-        if (typeof(child) === 'string') {
+        if (typeof child === 'string') {
             result.appendChild(document.createTextNode(child));
         } else {
             result.appendChild(child);
         }
     }
 
-    result.att$ = function(name: string, value: string) {
+    result.att$ = function (this, name : string, value) {
         this.setAttribute(name, value);
         return this;
     };
 
 
-    result.onclick$ = function(callback: (this: GlobalEventHandlers, ev: MouseEvent) => Tag) {
+    result.onclick$ = function(this, callback) {
         this.onclick = callback;
         return this;
     };
@@ -29,57 +46,21 @@ function tag(name: string, ...children: Child[]): Tag {
     return result;
 }
 
-function canvas(...children: Child[]): Tag {
-    return tag("canvas", ...children);
-}
+const canvas = (...children: Child[]) => tag<HTMLCanvasElement>("canvas", ...children);
+const h1     = (...children: Child[]) => tag<HTMLHeadingElement>("h1", ...children);
+const h2     = (...children: Child[]) => tag<HTMLHeadingElement>("h2", ...children);
+const h3     = (...children: Child[]) => tag<HTMLHeadingElement>("h3", ...children);
+const p      = (...children: Child[]) => tag<HTMLParagraphElement>("p", ...children);
+const a      = (...children: Child[]) => tag<HTMLAnchorElement>("a", ...children);
+const div    = (...children: Child[]) => tag<HTMLDivElement>("div", ...children);
+const span   = (...children: Child[]) => tag<HTMLSpanElement>("span", ...children);
+const select = (...children: Child[]) => tag<HTMLSelectElement>("select", ...children);
 
-function h1(...children: Child[]): Tag {
-    return tag("h1", ...children);
-}
+const img   = (src: string)  => tag<HTMLImageElement>("img").att$("src", src);
+const input = (type: string) => tag<HTMLInputElement>("input").att$("type", type);
 
-function h2(...children: Child[]): Tag {
-    return tag("h2", ...children);
-}
-
-function h3(...children: Child[]): Tag {
-    return tag("h3", ...children);
-}
-
-function p(...children: Child[]): Tag {
-    return tag("p", ...children);
-}
-
-function a(...children: Child[]): Tag {
-    return tag("a", ...children);
-}
-
-function div(...children: Child[]): Tag {
-    return tag("div", ...children);
-}
-
-function span(...children: Child[]): Tag {
-    return tag("span", ...children);
-}
-
-function select(...children: Child[]): Tag {
-    return tag("select", ...children);
-}
-
-
-function img(src: string): Tag {
-    return tag("img").att$("src", src);
-}
-
-function input(type: string): Tag {
-    return tag("input").att$("type", type);
-}
-
-interface Routes {
-    [route: string]: Tag
-}
-
-function router(routes: Routes): Tag {
-    let result = div();
+function router(routes: Record<string, Tag>) {
+    const result = div();
 
     function syncHash() {
         let hashLocation = document.location.hash.split('#')[1];
@@ -94,9 +75,9 @@ function router(routes: Routes): Tag {
         }
 
         while (result.firstChild) {
-            result.removeChild(result.lastChild);
+            result.removeChild(result.lastChild!);
         }
-        result.appendChild(routes[hashLocation]);
+        result.appendChild(routes[hashLocation]!);
 
         return result;
     };

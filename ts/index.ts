@@ -1,8 +1,6 @@
-let feature_params = false; 
+let feature_params = false;
 
-interface VertexAttribs {
-    [name: string]: number
-}
+type VertexAttribs = Record<string, number>;
 
 const vertexAttribs: VertexAttribs = {
     "meshPosition": 0
@@ -43,12 +41,12 @@ function linkShaderProgram(gl: WebGLRenderingContext, shaders: WebGLShader[], ve
         throw new Error('Could not create a new shader program');
     }
 
-    for (let shader of shaders) {
+    for (const shader of shaders) {
         gl.attachShader(program, shader);
     }
 
-    for (let vertexName in vertexAttribs) {
-        gl.bindAttribLocation(program, vertexAttribs[vertexName], vertexName);
+    for (const [vertexName, vertexVal] of Object.entries(vertexAttribs)) {
+        gl.bindAttribLocation(program, vertexVal, vertexName);
     }
 
     gl.linkProgram(program);
@@ -59,7 +57,7 @@ function linkShaderProgram(gl: WebGLRenderingContext, shaders: WebGLShader[], ve
 }
 
 function createTextureFromImage(gl: WebGLRenderingContext, image: TexImageSource): WebGLTexture {
-    let textureId = gl.createTexture();
+    const textureId = gl.createTexture();
     if (textureId === null) {
         throw new Error('Could not create a new WebGL texture');
     }
@@ -82,78 +80,76 @@ function createTextureFromImage(gl: WebGLRenderingContext, image: TexImageSource
     return textureId;
 }
 
-interface Uniforms {
-    [name: string]: WebGLUniformLocation | null
-}
+type Uniforms = Record<string, WebGLUniformLocation | null>;
 
-interface CompiledFilter {
+interface CompiledFilter<T extends HTMLElement = HTMLElement> {
     id: WebGLProgram,
     uniforms: Uniforms,
     duration: Expr,
     transparent: string | null,
-    paramsPanel: Tag
+    paramsPanel: Tag<T>
 }
 
-interface Snapshot {
-    [name: string]: {
-        uniform: WebGLUniformLocation | null,
-        value: number | null
-    }
-}
+type Snapshot = Record<string, {
+    uniform: WebGLUniformLocation | null,
+    value: number | null
+}>
 
 // TODO(#54): pre-load all of the filters and just switch between them without loading/unloading them constantly
 function loadFilterProgram(gl: WebGLRenderingContext, filter: Filter, vertexAttribs: VertexAttribs): CompiledFilter {
-    let vertexShader = compileShaderSource(gl, filter.vertex, gl.VERTEX_SHADER);
-    let fragmentShader = compileShaderSource(gl, filter.fragment, gl.FRAGMENT_SHADER);
-    let id = linkShaderProgram(gl, [vertexShader, fragmentShader], vertexAttribs);
+    const vertexShader = compileShaderSource(gl, filter.vertex, gl.VERTEX_SHADER);
+    const fragmentShader = compileShaderSource(gl, filter.fragment, gl.FRAGMENT_SHADER);
+    const id = linkShaderProgram(gl, [vertexShader, fragmentShader], vertexAttribs);
     gl.deleteShader(vertexShader);
     gl.deleteShader(fragmentShader);
     gl.useProgram(id);
 
-    let uniforms: Uniforms = {
-        "resolution": gl.getUniformLocation(id, 'resolution'),
-        "time": gl.getUniformLocation(id, 'time'),
-        "emoteSize": gl.getUniformLocation(id, 'emoteSize'),
+    const uniforms: Uniforms = {
+        resolution: gl.getUniformLocation(id, 'resolution'),
+        time: gl.getUniformLocation(id, 'time'),
+        emoteSize: gl.getUniformLocation(id, 'emoteSize'),
     };
 
     // TODO(#55): there no "reset to default" button in the params panel of a filter
-    let paramsPanel = div().att$("class", "widget-element");
-    let paramsInputs: {[name: string]: Tag} = {};
+    const paramsPanel = div().att$("class", "widget-element");
+    const paramsInputs: Record<string, Tag> = {};
 
-    for (let paramName in filter.params) {
+    if (!filter.params) throw new Error("unknown error");
+
+    for (const [paramName, paramVal] of Object.entries(filter.params)) {
         if (paramName in uniforms) {
             throw new Error(`Redefinition of existing uniform parameter ${paramName}`);
         }
-        
-        switch (filter.params[paramName].type) {
+
+        switch (paramVal.type) {
         case "float": {
-            const valuePreview = span(filter.params[paramName].init.toString());
+            const valuePreview = span(paramVal.init.toString());
             const valueInput = input("range");
 
-            if (filter.params[paramName].min !== undefined) {
-                valueInput.att$("min", filter.params[paramName].min);
+            if (paramVal.min !== undefined) {
+                valueInput.att$("min", String(paramVal.min));
             }
 
-            if (filter.params[paramName].max !== undefined) {
-                valueInput.att$("max", filter.params[paramName].max);
+            if (paramVal.max !== undefined) {
+                valueInput.att$("max", String(paramVal.max));
             }
 
-            if (filter.params[paramName].step !== undefined) {
-                valueInput.att$("step", filter.params[paramName].step);
+            if (paramVal.step !== undefined) {
+                valueInput.att$("step", String(paramVal.step));
             }
 
-            if (filter.params[paramName].init !== undefined) {
-                valueInput.att$("value", filter.params[paramName].init);
+            if (paramVal.init !== undefined) {
+                valueInput.att$("value", String(paramVal.init));
             }
 
             paramsInputs[paramName] = valueInput;
 
-            valueInput.oninput = function () {
+            valueInput.oninput = function(this) {
                 valuePreview.innerText = this.value;
                 paramsPanel.dispatchEvent(new CustomEvent("paramsChanged"));
             };
 
-            const label: string = filter.params[paramName].label ?? paramName;
+            const label = paramVal.label ?? paramName;
 
             paramsPanel.appendChild(div(
                 span(`${label}: `), valuePreview,
@@ -162,7 +158,7 @@ function loadFilterProgram(gl: WebGLRenderingContext, filter: Filter, vertexAttr
         } break;
 
         default: {
-            throw new Error(`Filter parameters do not support type ${filter.params[paramName].type}`)
+            throw new Error(`Filter parameters do not support type ${paramVal.type}`)
         }
         }
 
@@ -170,23 +166,23 @@ function loadFilterProgram(gl: WebGLRenderingContext, filter: Filter, vertexAttr
     }
 
 
-    paramsPanel.paramsSnapshot$ = function() {
+    paramsPanel.paramsSnapshot$ = () => {
         let snapshot: Snapshot = {};
-        for (let paramName in paramsInputs) {
+        for (const paramName in paramsInputs) {
             snapshot[paramName] = {
-                "uniform": uniforms[paramName],
-                "value": Number(paramsInputs[paramName].value)
+                uniform: uniforms[paramName],
+                value: Number(paramsInputs[paramName].value)
             };
         }
         return snapshot;
     };
 
     return {
-        "id": id,
-        "uniforms": uniforms,
-        "duration": compile_expr(filter.duration),
-        "transparent": filter.transparent,
-        "paramsPanel": paramsPanel,
+        id,
+        uniforms,
+        duration: compile_expr(filter.duration),
+        transparent: filter.transparent,
+        paramsPanel: paramsPanel,
     };
 }
 
@@ -194,17 +190,17 @@ function ImageSelector() {
     const imageInput = input("file");
     const imagePreview = img("img/tsodinClown.png")
           .att$("class", "widget-element")
-          .att$("width", CANVAS_WIDTH);
+          .att$("width", String(CANVAS_WIDTH));
     const root = div(
         div(imageInput).att$("class", "widget-element"),
         imagePreview
     ).att$("class", "widget");
 
-    root.selectedImage$ = function() {
+    root.selectedImage$ = () => {
         return imagePreview;
     };
 
-    root.selectedFileName$ = function() {
+    root.selectedFileName$ = () => {
         function removeFileNameExt(fileName: string): string {
             if (fileName.includes('.')) {
                 return fileName.split('.').slice(0, -1).join('.');
@@ -217,12 +213,12 @@ function ImageSelector() {
         return file ? removeFileNameExt(file.name) : 'result';
     };
 
-    root.updateFiles$ = function(files: FileList) {
+    root.updateFiles$ = (files) => {
         imageInput.files = files;
-        imageInput.onchange();
+        imageInput.onchange?.();
     }
 
-    imagePreview.addEventListener('load', function(this: HTMLImageElement) {
+    imagePreview.addEventListener('load', function(this) {
         root.dispatchEvent(new CustomEvent("imageSelected", {
             detail: {
                 imageData: this
@@ -230,12 +226,12 @@ function ImageSelector() {
         }));
     });
 
-    imagePreview.addEventListener('error', function(this: HTMLImageElement) {
+    imagePreview.addEventListener('error', function(this) {
         imageInput.value = '';
         this.src = 'img/error.png';
     });
 
-    imageInput.onchange = function() {
+    imageInput.onchange = function(this) {
         imagePreview.src = URL.createObjectURL(this.files[0]);
     };
 
@@ -246,15 +242,15 @@ function FilterList() {
     const root = select();
 
     // Populating the FilterList
-    for (let name in filters) {
+    for (const name in filters) {
         root.add(new Option(name));
     }
 
-    root.selectedFilter$ = function() {
+    root.selectedFilter$ = () => {
         return filters[root.selectedOptions[0].value];
     };
 
-    root.onchange = function() {
+    root.onchange = () => {
         root.dispatchEvent(new CustomEvent('filterChanged', {
             detail: {
                 filter: root.selectedFilter$()
@@ -262,7 +258,7 @@ function FilterList() {
         }));
     };
 
-    root.addEventListener('wheel', function(e: WheelEvent) {
+    root.addEventListener('wheel', (e: WheelEvent) => {
         e.preventDefault();
         if (e.deltaY < 0) {
             root.selectedIndex = Math.max(root.selectedIndex - 1, 0);
@@ -270,7 +266,7 @@ function FilterList() {
         if (e.deltaY > 0) {
             root.selectedIndex = Math.min(root.selectedIndex + 1, root.length - 1);
         }
-        root.onchange();
+        root.onchange?.();
     });
 
     return root;
@@ -279,8 +275,8 @@ function FilterList() {
 function FilterSelector() {
     const filterList_ = FilterList();
     const filterPreview = canvas()
-          .att$("width", CANVAS_WIDTH)
-          .att$("height", CANVAS_HEIGHT);
+          .att$("width", String(CANVAS_WIDTH))
+          .att$("height", String(CANVAS_HEIGHT));
     const root = div(
         div("Filter: ", filterList_)
             .att$("class", "widget-element"),
@@ -293,38 +289,33 @@ function FilterSelector() {
     }
 
     // Initialize GL
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    // Mesh Position
     {
-        gl.enable(gl.BLEND);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-        // Mesh Position
-        {
-            let meshPositionBufferData = new Float32Array(TRIANGLE_PAIR * TRIANGLE_VERTICIES * VEC2_COUNT);
-            for (let triangle = 0; triangle < TRIANGLE_PAIR; ++triangle) {
-                for (let vertex = 0; vertex < TRIANGLE_VERTICIES; ++vertex) {
-                    const quad = triangle + vertex;
-                    const index =
-                          triangle * TRIANGLE_VERTICIES * VEC2_COUNT +
-                          vertex * VEC2_COUNT;
-                    meshPositionBufferData[index + VEC2_X] = (2 * (quad & 1) - 1);
-                    meshPositionBufferData[index + VEC2_Y] = (2 * ((quad >> 1) & 1) - 1);
-                }
+        const meshPositionBufferData = new Float32Array(TRIANGLE_PAIR * TRIANGLE_VERTICIES * VEC2_COUNT);
+        for (let triangle = 0; triangle < TRIANGLE_PAIR; ++triangle) {
+            for (let vertex = 0; vertex < TRIANGLE_VERTICIES; ++vertex) {
+                const quad = triangle + vertex;
+                const index =
+                      triangle * TRIANGLE_VERTICIES * VEC2_COUNT +
+                      vertex * VEC2_COUNT;
+                meshPositionBufferData[index + VEC2_X] = (2 * (quad & 1) - 1);
+                meshPositionBufferData[index + VEC2_Y] = (2 * ((quad >> 1) & 1) - 1);
             }
-
-            let meshPositionBuffer = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, meshPositionBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, meshPositionBufferData, gl.STATIC_DRAW);
-
-            const meshPositionAttrib = vertexAttribs['meshPosition'];
-            gl.vertexAttribPointer(
-                meshPositionAttrib,
-                VEC2_COUNT,
-                gl.FLOAT,
-                false,
-                0,
-                0);
-            gl.enableVertexAttribArray(meshPositionAttrib);
         }
+        const meshPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, meshPositionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, meshPositionBufferData, gl.STATIC_DRAW);
+        const meshPositionAttrib = vertexAttribs['meshPosition'];
+        gl.vertexAttribPointer(
+            meshPositionAttrib,
+            VEC2_COUNT,
+            gl.FLOAT,
+            false,
+            0,
+            0);
+        gl.enableVertexAttribArray(meshPositionAttrib);
     }
 
     // TODO(#49): FilterSelector does not handle loadFilterProgram() failures
@@ -336,8 +327,8 @@ function FilterSelector() {
     function syncParams() {
         if (program) {
             const snapshot = program.paramsPanel.paramsSnapshot$();
-            for (let paramName in snapshot) {
-                gl.uniform1f(snapshot[paramName].uniform, snapshot[paramName].value);
+            for (const paramName in snapshot) {
+                gl!.uniform1f(snapshot[paramName]!.uniform, snapshot[paramName]!.value!);
             }
         }
     }
@@ -349,7 +340,7 @@ function FilterSelector() {
     }
     syncParams();
 
-    root.updateImage$ = function(newEmoteImage: HTMLImageElement) {
+    root.updateImage$ = (newEmoteImage: HTMLImageElement) => {
         emoteImage = newEmoteImage;
         if (emoteTexture) {
             gl.deleteTexture(emoteTexture);
@@ -374,7 +365,7 @@ function FilterSelector() {
         syncParams();
     });
 
-    root.render$ = function (filename: string): any | undefined {
+    root.render$ = (filename) => {
         if (program === undefined) {
             console.warn('Could not rendering anything because the filter was not selected');
             return undefined;
@@ -395,13 +386,13 @@ function FilterSelector() {
         });
 
         const context: UserContext = {
-            "vars": {
+            vars: {
                 "Math.PI": Math.PI
             }
         };
         if (context.vars !== undefined) {
             const snapshot = program.paramsPanel.paramsSnapshot$();
-            for (let paramName in snapshot) {
+            for (const paramName in snapshot) {
                 context.vars[paramName] = snapshot[paramName].value;
             }
         }
@@ -441,7 +432,7 @@ function FilterSelector() {
             gl.clear(gl.COLOR_BUFFER_BIT);
             gl.drawArrays(gl.TRIANGLES, 0, TRIANGLE_PAIR * TRIANGLE_VERTICIES);
 
-            let pixels = new Uint8ClampedArray(4 * CANVAS_WIDTH * CANVAS_HEIGHT);
+            const pixels = new Uint8ClampedArray(4 * CANVAS_WIDTH * CANVAS_HEIGHT);
             gl.readPixels(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
             // Flip the image vertically
             {
@@ -453,8 +444,8 @@ function FilterSelector() {
                         const bi = (CANVAS_HEIGHT - y - 1) * 4 * CANVAS_WIDTH + x;
                         const a = pixels[ai];
                         const b = pixels[bi];
-                        pixels[ai] = b;
-                        pixels[bi] = a;
+                        pixels[ai] = b!;
+                        pixels[bi] = a!;
                     }
                 }
             }
@@ -490,14 +481,14 @@ function FilterSelector() {
 
     // Rendering Loop
     {
-        const step = function(timestamp: number) {
+        const step = (timestamp: number) => {
             gl.clearColor(0.0, 1.0, 0.0, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
 
             if (program && emoteImage) {
-                gl.uniform1f(program.uniforms.time, timestamp * 0.001);
-                gl.uniform2f(program.uniforms.resolution, filterPreview.width, filterPreview.height);
-                gl.uniform2f(program.uniforms.emoteSize, emoteImage.width, emoteImage.height);
+                gl.uniform1f(program.uniforms.time!, timestamp * 0.001);
+                gl.uniform2f(program.uniforms.resolution!, filterPreview.width, filterPreview.height);
+                gl.uniform2f(program.uniforms.emoteSize!, emoteImage.width, emoteImage.height);
 
                 gl.drawArrays(gl.TRIANGLES, 0, TRIANGLE_PAIR * TRIANGLE_VERTICIES);
             }
@@ -538,19 +529,19 @@ window.onload = () => {
 
     const imageSelector = ImageSelector();
     const filterSelector = FilterSelector();
-    imageSelector.addEventListener('imageSelected', function(e: CustomEvent) {
+    imageSelector.addEventListener('imageSelected', (e: CustomEvent) => {
         filterSelector.updateImage$(e.detail.imageData);
     });
     filterSelectorEntry.appendChild(filterSelector);
     imageSelectorEntry.appendChild(imageSelector);
 
     // drag file from anywhere
-    document.ondrop = function(event: DragEvent) {
+    document.ondrop = (event: DragEvent) => {
         event.preventDefault();
-        imageSelector.updateFiles$(event.dataTransfer?.files);
+        imageSelector.updateFiles$(event.dataTransfer?.files!);
     }
 
-    document.ondragover = function(event) {
+    document.ondragover = (event) => {
         event.preventDefault();
     }
 
@@ -561,8 +552,8 @@ window.onload = () => {
     if (renderButton === null) {
         throw new Error('Could not find "render"');
     }
-    renderButton.onclick = function() {
-        if (gif && gif.running) {
+    renderButton.onclick = () => {
+        if (gif?.running) {
             gif.abort();
         }
         const fileName = imageSelector.selectedFileName$();
