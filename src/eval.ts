@@ -1,5 +1,5 @@
-type BinaryOp = '+' | '-' | '*' | '/' | '%';
-type BinaryOpFunc = (lhs: number, rhs: number) => number;
+export type BinaryOp = '+' | '-' | '*' | '/' | '%';
+export type BinaryOpFunc = (lhs: number, rhs: number) => number;
 
 enum BinaryPrec {
     PREC0 = 0,
@@ -42,7 +42,7 @@ const UNARY_OPS: Record<UnaryOp, UnaryOpFunc> = {
     '-': (arg: number) => -arg,
 };
 
-class Lexer {
+export class Lexer {
     src: string
 
     constructor(src: string) {
@@ -107,7 +107,7 @@ interface SymbolExpr {
     value: string
 }
 
-interface Expr {
+export interface Expr {
     kind: ExprKind,
     payload: UnaryOpExpr | BinaryOpExpr | FuncallExpr | SymbolExpr
 }
@@ -217,7 +217,7 @@ function parse_expr(lexer: Lexer, prec: BinaryPrec = BinaryPrec.PREC0): Expr {
     return lhs;
 }
 
-function compile_expr(src: string): Expr {
+export function compile_expr(src: string): Expr {
     const lexer = new Lexer(src);
     const result = parse_expr(lexer);
     const token = lexer.next();
@@ -229,12 +229,12 @@ function compile_expr(src: string): Expr {
     return result;
 }
 
-interface UserContext {
+export interface UserContext {
     vars?: Record<string, number>,
     funcs?: Record<string, (...xs: number[]) => number>,
 }
 
-function run_expr(expr: Expr, user_context: UserContext = {}): number {
+export function run_expr(expr: Expr, user_context: UserContext = {}): number {
     console.assert(typeof(expr) === 'object');
 
     switch (expr.kind) {

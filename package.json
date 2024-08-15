@@ -5,9 +5,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build": "node build.js build",
-    "watch": "node build.js watch",
-    "serve": "node build.js serve",
+    "build": "vite build",
+    "dev": "vite ",
+    "serve": "vite preview",
+    "lint" : "tsc --noEmit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -34,5 +35,8 @@
     "@types/node": "^22",
     "typescript": "^5.5",
     "vite": "^5.4.0"
+  },
+  "dependencies": {
+    "@dhdbstjr98/gif.js": "^1.0.2"
   }
 }

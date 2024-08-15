@@ -1,3 +1,8 @@
+import GIF from '@dhdbstjr98/gif.js';
+import { compile_expr, run_expr, type Expr, type UserContext } from "./eval";
+import { type Filter, filters } from "./filters";
+import { canvas, div, img, input, select, span, type Tag } from "./grecha";
+
 let feature_params = false;
 
 type VertexAttribs = Record<string, number>;
@@ -82,15 +87,15 @@ function createTextureFromImage(gl: WebGLRenderingContext, image: TexImageSource
 
 type Uniforms = Record<string, WebGLUniformLocation | null>;
 
-interface CompiledFilter<T extends HTMLElement = HTMLElement> {
+interface CompiledFilter {
     id: WebGLProgram,
     uniforms: Uniforms,
     duration: Expr,
     transparent: string | null,
-    paramsPanel: Tag<T>
+    paramsPanel: Tag<HTMLDivElement>
 }
 
-type Snapshot = Record<string, {
+export type Snapshot = Record<string, {
     uniform: WebGLUniformLocation | null,
     value: number | null
 }>
@@ -112,11 +117,11 @@ function loadFilterProgram(gl: WebGLRenderingContext, filter: Filter, vertexAttr
 
     // TODO(#55): there no "reset to default" button in the params panel of a filter
     const paramsPanel = div().att$("class", "widget-element");
-    const paramsInputs: Record<string, Tag> = {};
+    const paramsInputs: Record<string, Tag<HTMLInputElement>> = {};
 
-    if (!filter.params) throw new Error("unknown error");
+    // if (!filter.params) throw new Error("unknown error");
 
-    for (const [paramName, paramVal] of Object.entries(filter.params)) {
+    for (const [paramName, paramVal] of Object.entries(filter.params ?? [])) {
         if (paramName in uniforms) {
             throw new Error(`Redefinition of existing uniform parameter ${paramName}`);
         }
@@ -170,8 +175,8 @@ function loadFilterProgram(gl: WebGLRenderingContext, filter: Filter, vertexAttr
         let snapshot: Snapshot = {};
         for (const paramName in paramsInputs) {
             snapshot[paramName] = {
-                uniform: uniforms[paramName],
-                value: Number(paramsInputs[paramName].value)
+                uniform: uniforms[paramName]!,
+                value: Number(paramsInputs[paramName]!.value)
             };
         }
         return snapshot;
@@ -309,13 +314,13 @@ function FilterSelector() {
         gl.bufferData(gl.ARRAY_BUFFER, meshPositionBufferData, gl.STATIC_DRAW);
         const meshPositionAttrib = vertexAttribs['meshPosition'];
         gl.vertexAttribPointer(
-            meshPositionAttrib,
+            meshPositionAttrib!,
             VEC2_COUNT,
             gl.FLOAT,
             false,
             0,
             0);
-        gl.enableVertexAttribArray(meshPositionAttrib);
+        gl.enableVertexAttribArray(meshPositionAttrib!);
     }
 
     // TODO(#49): FilterSelector does not handle loadFilterProgram() failures
@@ -393,7 +398,7 @@ function FilterSelector() {
         if (context.vars !== undefined) {
             const snapshot = program.paramsPanel.paramsSnapshot$();
             for (const paramName in snapshot) {
-                context.vars[paramName] = snapshot[paramName].value;
+                context.vars[paramName] = snapshot[paramName]!.value!;
             }
         }
 
@@ -424,9 +429,9 @@ function FilterSelector() {
 
         let t = 0.0;
         while (t <= duration) {
-            gl.uniform1f(program.uniforms.time, t);
-            gl.uniform2f(program.uniforms.resolution, CANVAS_WIDTH, CANVAS_HEIGHT);
-            gl.uniform2f(program.uniforms.emoteSize, emoteImage.width, emoteImage.height);
+            gl.uniform1f(program.uniforms.time!, t);
+            gl.uniform2f(program.uniforms.resolution!, CANVAS_WIDTH, CANVAS_HEIGHT);
+            gl.uniform2f(program.uniforms.emoteSize!, emoteImage.width, emoteImage.height);
 
             gl.clearColor(0.0, 1.0, 0.0, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
@@ -503,19 +508,6 @@ function FilterSelector() {
 }
 
 window.onload = () => {
-    if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register('serviceworker.js').then(
-            (registration) => {
-                console.log("Registered a Service Worker ", registration);
-            },
-            (error) => {
-                console.error("Could not register a Service Worker ", error);
-            },
-        );
-    } else {
-        console.error("Service Workers are not supported in this browser.");
-    }
-
     feature_params = new URLSearchParams(document.location.search).has("feature-params");
 
     const filterSelectorEntry = document.getElementById('filter-selector-entry');
@@ -529,9 +521,9 @@ window.onload = () => {
 
     const imageSelector = ImageSelector();
     const filterSelector = FilterSelector();
-    imageSelector.addEventListener('imageSelected', (e: CustomEvent) => {
+    imageSelector.addEventListener('imageSelected', ((e: CustomEvent) => {
         filterSelector.updateImage$(e.detail.imageData);
-    });
+    }) as EventListener);
     filterSelectorEntry.appendChild(filterSelector);
     imageSelectorEntry.appendChild(imageSelector);
 
@@ -560,4 +552,3 @@ window.onload = () => {
         gif = filterSelector.render$(`${fileName}.gif`);
     };
 }
-// TODO(#75): run typescript compiler on CI

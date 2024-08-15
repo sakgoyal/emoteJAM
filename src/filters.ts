@@ -7,7 +7,7 @@ type Param = {
     step?: number,
 }
 
-type Filter = {
+export type Filter = {
     transparent: string | null,
     duration: string,
     params?: Record<string, Param>,
@@ -19,7 +19,7 @@ type FilterType = "Hop" | "Hopper" | "Overheat" | "Bounce" | "Circle" | "Slide" 
 
 // TODO(#58): add params to all of the filters
 // TODO(#61): human readable titles for the filter params
-const filters: Record<FilterType, Filter> = {
+export const filters: Record<FilterType, Filter> = {
     Hop: {
         transparent: String(0x00FF00),
         duration: "interval * 2",
