@@ -3,14 +3,6 @@ import type { Snapshot } from "./index";
 
 type Child = string | HTMLElement | Tag;
 
-/**
- * Used to patch typescript conflict between class and className.
- * Typscript merges interfaces so this works without modifying the library version of the interface.
- * See the Notes section here.
- * https://developer.mozilla.org/en-US/docs/Web/API/Element/className#notes
- */
-// interface HTMLElement { class : string }
-
 export type Tag<T extends HTMLElement = HTMLElement> = T & {
     att$ : (name: string, value: string) => Tag<T>;
     onclick$ : (callback: (this: GlobalEventHandlers, ev: MouseEvent) => Tag<T>) => Tag<T>;
